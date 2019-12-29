@@ -65,6 +65,10 @@ def build_model():
     -------
     an sklearn pipeline object
     """
+
+    # Note on parameter selection: Grid search was used in the
+    # preparatory notebook to determine good parameters.  Those
+    # parameters are copied here.
     pipeline = Pipeline([
         ("vectorizer", TfidfVectorizer(tokenizer=tokenize,
                                        stop_words=stop_words)),
