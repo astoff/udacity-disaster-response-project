@@ -2,7 +2,7 @@ import json
 import plotly
 import pandas as pd
 
-from nltk.stem import WordNetLemmatizer
+from nltk.stem.snowball import SnowballStemmer
 from nltk.tokenize import word_tokenize
 
 from flask import Flask
@@ -14,16 +14,12 @@ from sqlalchemy import create_engine
 
 app = Flask(__name__)
 
+stem = SnowballStemmer("english").stem
+
 def tokenize(text):
-    tokens = word_tokenize(text)
-    lemmatizer = WordNetLemmatizer()
-
-    clean_tokens = []
-    for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-        clean_tokens.append(clean_tok)
-
-    return clean_tokens
+    words = word_tokenize(text.lower())
+    words = [stem(w) for w in words]
+    return words
 
 # load data
 engine = create_engine('sqlite:///../data/YourDatabaseName.db')
