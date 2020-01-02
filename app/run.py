@@ -1,6 +1,8 @@
 import json
 import plotly
+from plotly.graph_objects import Heatmap
 import pandas as pd
+import numpy as np
 
 from nltk.stem.snowball import SnowballStemmer
 from nltk.tokenize import word_tokenize
@@ -11,6 +13,7 @@ from plotly.graph_objs import Bar
 from sklearn.externals import joblib
 from sqlalchemy import create_engine
 
+from itertools import product
 
 app = Flask(__name__)
 
@@ -35,15 +38,36 @@ model = joblib.load("../out/classifier.pkl")
 def index():
     
     # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
 
     df_categories = df.drop(columns=['message', 'original', 'genre']).sum()
+    category_names = list(df_categories.index)
     df_categories['total'] = df.shape[0]
     df_categories = df_categories.sort_values(ascending=False)
+
+    df_cat_matrix = pd.DataFrame([])
+    for cat1, cat2 in product(category_names, category_names):
+        pos1, pos2 = category_names.index(cat1), category_names.index(cat2)
+        if pos1 <= pos2:
+            items = df[df[cat2] == 1][cat1].sum()
+        else:
+            items = None
+        df_cat_matrix.loc[cat1, cat2] = items
+    print(df_cat_matrix)
+
+    # Logarithmic color scale for heatmap
+    myscale = [[0.0, '#000004'],
+               [1.0E-6, '#180f3d'],
+               [1.0E-5, '#440f76'],
+               [1.0E-4, '#721f81'],
+               [1.0E-3, '#9e2f7f'],
+               [1.0E-2, '#cd4071'],
+               [1.0E-1, '#f1605d'],
+               [0.3, '#fd9668'],
+               [0.7, '#feca8d'],
+               [1.0, '#fcfdbf']]
     # create visuals
-    # TODO: Below is an example - modify to create your own visuals
     graphs = [
         {
             'data': [
@@ -72,12 +96,32 @@ def index():
             ],
 
             'layout': {
-                'title': 'Total messages in each category',
+                'title': 'Distribution of message categories',
                 'yaxis': {
                     'title': "Count"
                 },
                 'xaxis': {
                     'title': "Category"
+                }
+            }
+        },
+        {
+            'data': [
+                Heatmap(
+                    colorscale=myscale,
+                    z=df_cat_matrix.values,
+                    x=list(df_cat_matrix.columns),
+                    y=list(df_cat_matrix.index),
+                )
+            ],
+
+            'layout': {
+                'title': 'Number of messages belonging to two given categories',
+                'yaxis': {
+                    'title': "Category 1"
+                },
+                'xaxis': {
+                    'title': "Category 2"
                 }
             }
         }
